@@ -1,105 +1,106 @@
-import diffusers
-import streamlit as st
 import torch
-from PIL import ImageDraw, ImageFont
+import streamlit as st
+from PIL import Image, ImageDraw, ImageFont
+from diffusers import AutoPipelineForText2Image
 
-if torch.cuda.is_available():
-    device = "cuda"
-    dtype = torch.float16
-else:
-    device = "cpu"
-    dtype = torch.float32
+# Device configuration
+device = "cuda" if torch.cuda.is_available() else "cpu"
+dtype = torch.float16 if device == "cuda" else torch.float32
 
-print(f"Using {device} device with {dtype} data type.")
-
-# The dictionary mapping style names to style strings
+# Style dictionary
 style_dict = {
     "none": "",
     "anime": "cartoon, animated, Studio Ghibli style, cute, Japanese animation",
-    # A photograph on film suggests an artistic approach
     "photo": "photograph, film, 35 mm camera",
-    "video game": "rendered in unreal engine, hyper-realistic, volumetric lighting, --ar 9:16 --hd --q 2",
+    "video game": "rendered in unreal engine, hyper-realistic, volumetric lighting",
     "watercolor": "painting, watercolors, pastel, composition",
 }
 
+
 @st.cache_resource
 def load_model():
-    pipeline = diffusers.AutoPipelineForText2Image.from_pretrained(
+    pipeline = AutoPipelineForText2Image.from_pretrained(
         "CompVis/stable-diffusion-v1-4", torch_dtype=dtype
     )
     pipeline.to(device)
     return pipeline
 
 
-def generate_images(prompt, pipeline, guidance=7.5, steps=50, style="none"):
-    styled_prompts = f"{prompt} {style}"
-    return pipeline(
-        styled_prompts, guidance_scale=guidance, num_inference_steps=steps
-    ).images
+def generate_image(prompt, pipeline, guidance=7.5, steps=50, style="none"):
+    styled_prompt = f"{prompt}, {style_dict.get(style, '')}".strip(", ")
+    result = pipeline(
+        styled_prompt,
+        guidance_scale=guidance,
+        num_inference_steps=steps
+    )
+    if not result.images:
+        raise RuntimeError("Image generation failed.")
+    return result.images[0]
 
 
 def add_text_to_image(image, text, text_color="white", outline_color="black",
                       font_size=50, border_width=2, font_path="arial.ttf"):
-    # Initialization
-    font = ImageFont.truetype(font_path, size=font_size)
     draw = ImageDraw.Draw(image)
-    width, height = image.size
+    try:
+        font = ImageFont.truetype(font_path, font_size)
+    except IOError:
+        font = ImageFont.load_default()
 
-    # Calculate the size of the text
+    width, height = image.size
     text_bbox = draw.textbbox((0, 0), text, font=font)
     text_width = text_bbox[2] - text_bbox[0]
     text_height = text_bbox[3] - text_bbox[1]
-
-    # Calculate the position at which to draw the text to center it
     x = (width - text_width) / 2
     y = (height - text_height) / 2
 
-    # Draw text
     draw.text((x, y), text, font=font, fill=text_color,
               stroke_width=border_width, stroke_fill=outline_color)
+    return image
 
 
-def generate_memes(prompt, text, pipeline, guidance, steps, style):
-    images = generate_images(
-        prompt, pipeline, guidance, steps, style
-    )
-    img = images[0]
-    add_text_to_image(img, text)
-
-    return img
+def sidebar_controls():
+    st.sidebar.title("Meme Controls")
+    prompt = st.sidebar.text_area("Text-to-Image Prompt")
+    caption = st.sidebar.text_area("Meme Caption")
+    guidance = st.sidebar.slider("Guidance Scale", 2.0, 15.0, 7.5)
+    steps = st.sidebar.slider("Inference Steps", 10, 100, 50)
+    style = st.sidebar.selectbox("Style", options=style_dict.keys())
+    generate = st.sidebar.button("Generate Meme")
+    return prompt, caption, guidance, steps, style, generate
 
 
 def main():
     st.set_page_config(page_title="Meme Generator", layout="centered")
-    st.title("🧠 Awesome Meme Generator")
-    
-    with st.sidebar:
-        prompt = st.sidebar.text_area("Text-to-Image Prompt")
-        text = st.sidebar.text_area("Text to Display")
+    st.title("🧠 Awesome Meme For Life")
 
-        guidance_help = "Lower values follow the prompt less strictly. Higher values risk distored images."
-        guidance = st.sidebar.slider("Guidance", 2.0, 15.0, 7.5, help=guidance_help)
-
-        steps_help = "More steps produces better images but takes longer."
-        steps = st.sidebar.slider("Steps", 10, 150, 50, help=steps_help)
-
-        style = st.sidebar.selectbox("Style", options=style_dict.keys())
-
-        generate = st.sidebar.button("Generate Meme")
+    prompt, caption, guidance, steps, style, generate = sidebar_controls()
 
     if generate:
         if not prompt:
-            st.error("Please enter a prompt")
-        elif not text:
-            st.error("Please enter the text")
-        else:
-            with st.spinner("Generating images..."):
+            st.error("Please enter a prompt.")
+            return
+        if not caption:
+            st.error("Please enter meme caption text.")
+            return
+
+        with st.spinner("Generating meme..."):
+            try:
                 pipeline = load_model()
-                image = generate_memes(prompt, text, pipeline, guidance, steps, style)
-                print("meme generated. time to display..")
-                st.image(image, caption="Your awesome Meme", use_column_width=True)
+                image = generate_image(prompt, pipeline, guidance, steps, style)
+                image = add_text_to_image(image, caption)
+                st.image(image, caption="Your Meme", use_column_width=True)
+
+                # Download button
+                from io import BytesIO
+                buf = BytesIO()
+                image.save(buf, format="PNG")
+                st.download_button("Download Meme", data=buf.getvalue(),
+                                   file_name="meme.png", mime="image/png")
+
+                st.success("Meme generated successfully!")
+            except Exception as e:
+                st.error(f"Error: {e}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
-    
