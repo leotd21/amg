@@ -3,9 +3,13 @@ import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
 from diffusers import AutoPipelineForText2Image
 
+DEFAULT_MODEL_NAME = "stabilityai/sd-turbo"
+GPU_MODEL_NAME = "CompVis/stable-diffusion-v1-4"
+
 # Device configuration
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.float16 if device == "cuda" else torch.float32
+MODEL_NAME = GPU_MODEL_NAME if device == "cuda" else DEFAULT_MODEL_NAME
 
 # Style dictionary
 style_dict = {
@@ -20,13 +24,13 @@ style_dict = {
 @st.cache_resource
 def load_model():
     pipeline = AutoPipelineForText2Image.from_pretrained(
-        "CompVis/stable-diffusion-v1-4", torch_dtype=dtype
+        MODEL_NAME, torch_dtype=dtype
     )
     pipeline.to(device)
     return pipeline
 
 
-def generate_image(prompt, pipeline, guidance=7.5, steps=50, style="none"):
+def generate_image(prompt, pipeline, guidance=7.5, steps=10, style="none"):
     styled_prompt = f"{prompt}, {style_dict.get(style, '')}".strip(", ")
     result = pipeline(
         styled_prompt,
@@ -71,7 +75,7 @@ def sidebar_controls():
 
 def main():
     st.set_page_config(page_title="Meme Generator", layout="centered")
-    st.title("🧠 Awesome Meme For Life")
+    st.title("🎈 Awesome Meme For Life")
 
     prompt, caption, guidance, steps, style, generate = sidebar_controls()
 
