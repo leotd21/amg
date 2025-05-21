@@ -40,7 +40,9 @@ def generate_image(prompt, pipeline, guidance=7.5, steps=10, style="none"):
     result = pipeline(
         styled_prompt,
         guidance_scale=guidance,
-        num_inference_steps=steps
+        num_inference_steps=steps,
+        height=128,
+        width=128
     )
     if not result.images:
         raise RuntimeError("Image generation failed.")
@@ -80,7 +82,7 @@ def sidebar_controls():
 
 def main():
     st.set_page_config(page_title="Meme Generator", layout="centered")
-    st.title("🎈 Awesome Meme For Life")
+    st.title("🖼️ Awesome Meme For Life")
 
     prompt, caption, guidance, steps, style, generate = sidebar_controls()
 
