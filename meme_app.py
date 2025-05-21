@@ -1,7 +1,7 @@
 import torch
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
-from diffusers import AutoPipelineForText2Image
+from diffusers import StableDiffusionPipeline
 
 DEFAULT_MODEL_NAME = "stabilityai/sd-turbo"
 GPU_MODEL_NAME = "CompVis/stable-diffusion-v1-4"
@@ -23,7 +23,7 @@ style_dict = {
 
 @st.cache_resource
 def load_model():
-    pipeline = AutoPipelineForText2Image.from_pretrained(
+    pipeline = StableDiffusionPipeline.from_pretrained(
         MODEL_NAME, torch_dtype=dtype
     )
     pipeline.to(device)
@@ -91,6 +91,7 @@ def main():
             try:
                 pipeline = load_model()
                 image = generate_image(prompt, pipeline, guidance, steps, style)
+                print("image generated! Adding text..")
                 image = add_text_to_image(image, caption)
                 st.image(image, caption="Your Meme", use_column_width=True)
 
