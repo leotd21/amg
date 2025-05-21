@@ -96,8 +96,8 @@ def main():
             with st.spinner("Generating images..."):
                 pipeline = load_model()
                 image = generate_memes(prompt, text, pipeline, guidance, steps, style)
-                st.subheader("Generated images")
-                st.image(image, caption="Your Meme", use_column_width=True)
+                print("meme generated. time to display..")
+                st.image(image, caption="Your awesome Meme", use_column_width=True)
 
 
 if __name__ == '__main__':
