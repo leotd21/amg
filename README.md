@@ -1,0 +1,2 @@
+# amg
+awesome meme generator
