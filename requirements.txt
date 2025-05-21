@@ -1,6 +1,15 @@
-torch
-diffusers
-pillow
-streamlit
-transformers
-accelerate
+# Streamlit app
+streamlit==1.35.0
+
+# Hugging Face + Stable Diffusion (CPU-only)
+diffusers==0.27.2
+transformers==4.40.1
+accelerate==0.30.1
+safetensors==0.4.2
+
+# CPU-only PyTorch (no CUDA)
+torch==2.2.2
+torchvision==0.17.2
+
+# Image processing
+Pillow==10.3.0
