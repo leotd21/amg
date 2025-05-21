@@ -76,6 +76,7 @@ def main():
     with st.sidebar:
         num_images = st.sidebar.number_input("Number of Images", min_value=1, max_value=2)
         prompt = st.sidebar.text_area("Text-to-Image Prompt")
+        text = st.sidebar.text_area("Text to Display")
 
         guidance_help = "Lower values follow the prompt less strictly. Higher values risk distored images."
         guidance = st.sidebar.slider("Guidance", 2.0, 15.0, 7.5, help=guidance_help)
