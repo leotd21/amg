@@ -31,10 +31,10 @@ def load_model():
     return pipeline
 
 
-def generate_images(prompt, pipeline, n, guidance=7.5, steps=50, style="none"):
+def generate_images(prompt, pipeline, guidance=7.5, steps=50, style="none"):
     styled_prompts = f"{prompt} {style}"
     return pipeline(
-        [styled_prompts]*n, guidance_scale=guidance, num_inference_steps=steps
+        styled_prompts, guidance_scale=guidance, num_inference_steps=steps
     ).images
 
 
@@ -59,22 +59,21 @@ def add_text_to_image(image, text, text_color="white", outline_color="black",
               stroke_width=border_width, stroke_fill=outline_color)
 
 
-def generate_memes(prompt, text, pipeline, n, guidance, steps, style):
-    # images = generate_images(prompt, pipeline, n)
+def generate_memes(prompt, text, pipeline, guidance, steps, style):
     images = generate_images(
-        prompt, pipeline, n, guidance, steps, style
+        prompt, pipeline, guidance, steps, style
     )
-    for img in images:
-        add_text_to_image(img, text)
+    img = images[0]
+    add_text_to_image(img, text)
 
-    return images
+    return img
 
 
 def main():
-    st.title("Your awesome meme generator")
+    st.set_page_config(page_title="Meme Generator", layout="centered")
+    st.title("🧠 Awesome Meme Generator")
     
     with st.sidebar:
-        num_images = st.sidebar.number_input("Number of Images", min_value=1, max_value=2)
         prompt = st.sidebar.text_area("Text-to-Image Prompt")
         text = st.sidebar.text_area("Text to Display")
 
@@ -96,11 +95,9 @@ def main():
         else:
             with st.spinner("Generating images..."):
                 pipeline = load_model()
-                images = generate_memes(prompt, text, pipeline, num_images, guidance, steps, style)
+                image = generate_memes(prompt, text, pipeline, guidance, steps, style)
                 st.subheader("Generated images")
-                for img in images:
-                    st.image(img)
-                # st.text_area(f"{num_images} images with prompt {prompt} / {text}")
+                st.image(image, caption="Your Meme", use_column_width=True)
 
 
 if __name__ == '__main__':
