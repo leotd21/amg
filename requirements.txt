@@ -1,5 +1,6 @@
-torch==2.2.2
+torch
 diffusers
 pillow
 streamlit
 transformers
+accelerate
