@@ -1,7 +1,7 @@
 import torch
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
-from diffusers import StableDiffusionPipeline
+from diffusers import StableDiffusionPipeline, EulerDiscreteScheduler
 
 DEFAULT_MODEL_NAME = "stabilityai/sd-turbo"
 GPU_MODEL_NAME = "CompVis/stable-diffusion-v1-4"
@@ -23,8 +23,13 @@ style_dict = {
 
 @st.cache_resource
 def load_model():
+    scheduler = EulerDiscreteScheduler.from_pretrained(
+        MODEL_NAME, subfolder="scheduler"
+    )
     pipeline = StableDiffusionPipeline.from_pretrained(
-        MODEL_NAME, torch_dtype=dtype
+        MODEL_NAME,
+        scheduler=scheduler,
+        torch_dtype=dtype
     )
     pipeline.to(device)
     return pipeline
@@ -64,10 +69,10 @@ def add_text_to_image(image, text, text_color="white", outline_color="black",
 
 def sidebar_controls():
     st.sidebar.title("Meme Controls")
-    prompt = st.sidebar.text_area("Text-to-Image Prompt")
-    caption = st.sidebar.text_area("Meme Caption")
-    guidance = st.sidebar.slider("Guidance Scale", 2.0, 15.0, 7.5)
-    steps = st.sidebar.slider("Inference Steps", 10, 100, 50)
+    prompt = st.sidebar.text_area("Text-to-Image Prompt", placeholder="study with corgi")
+    caption = st.sidebar.text_area("Meme Caption", placeholder="Go!")
+    guidance = st.sidebar.slider("Guidance Scale", 2.0, 10.0, 5.0)
+    steps = st.sidebar.slider("Inference Steps", 4, 50, 4)
     style = st.sidebar.selectbox("Style", options=style_dict.keys())
     generate = st.sidebar.button("Generate Meme")
     return prompt, caption, guidance, steps, style, generate
